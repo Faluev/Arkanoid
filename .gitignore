@@ -1,0 +1,9 @@
+/.vs/
+/Binaries/
+/Builds/
+/DerivedDataCache/
+/Intermediate/
+/Saved/
+*.sln
+*.suo
+*.user

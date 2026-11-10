@@ -1,0 +1,19 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.8",
+  "Category": "Games",
+  "Description": "Skillbox 2.6 - Ball Simulation",
+  "Modules": [
+    {
+      "Name": "Arkanoid",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Enabled": false,
+      "Name": "AndroidFileServer"
+    }
+  ]
+}
