@@ -4,8 +4,10 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Game/ArkanoidGameMode.h"
 #include "GameFramework/PlayerController.h"
 #include "InputAction.h"
 #include "InputCoreTypes.h"
@@ -118,9 +120,12 @@ void APaddle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
     InputMapping->MapKey(LaunchAction, EKeys::SpaceBar);
     EnhancedInput->BindAction(LaunchAction, ETriggerEvent::Started, this, &APaddle::LaunchBall);
 
-    UInputAction* RestartAction = NewObject<UInputAction>(InputMapping);
-    InputMapping->MapKey(RestartAction, EKeys::R);
-    EnhancedInput->BindAction(RestartAction, ETriggerEvent::Started, this, &APaddle::RestartLevel);
+    if (!GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
+    {
+        UInputAction* RestartAction = NewObject<UInputAction>(InputMapping);
+        InputMapping->MapKey(RestartAction, EKeys::R);
+        EnhancedInput->BindAction(RestartAction, ETriggerEvent::Started, this, &APaddle::RestartLevel);
+    }
 
     InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
     if (InputSubsystem.IsValid())
@@ -192,7 +197,14 @@ void APaddle::HandleBallDestroyed(AActor* DestroyedActor)
     {
         CurrentBall = nullptr;
         Lives = FMath::Max(0, Lives - 1);
-        PrepareBallTimer = GetWorldTimerManager().SetTimerForNextTick(this, &APaddle::PrepareBall);
+        if (Lives > 0)
+        {
+            PrepareBallTimer = GetWorldTimerManager().SetTimerForNextTick(this, &APaddle::PrepareBall);
+        }
+        else if (AArkanoidArcadeMode* Mode = GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
+        {
+            Mode->OnLivesDepleted();
+        }
     }
 }
 

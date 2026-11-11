@@ -3,6 +3,7 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "Game/ArkanoidGameMode.h"
 #include "UObject/ConstructorHelpers.h"
 #include "World/Block.h"
 #include "World/DestroyBlocksBonus.h"
@@ -80,7 +81,28 @@ void APlayingBoard::BeginPlay()
                 Block->Init(Row + 1, BonusClass, Color);
                 Block->FinishSpawning(BlockTransform, false, nullptr, ESpawnActorScaleMethod::OverrideRootScale);
                 Blocks.Add(Block);
+                Block->OnDestroyed.AddDynamic(this, &APlayingBoard::HandleBlockDestroyed);
             }
+        }
+    }
+}
+
+void APlayingBoard::HandleBlockDestroyed(AActor* DestroyedActor)
+{
+    const int32 Index = Blocks.IndexOfByKey(Cast<ABlock>(DestroyedActor));
+    if (Index == INDEX_NONE)
+    {
+        return;
+    }
+
+    // Remove first so every block can contribute points only once.
+    Blocks.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+    UWorld* World = GetWorld();
+    if (World && !World->bIsTearingDown)
+    {
+        if (AArkanoidArcadeMode* Mode = World->GetAuthGameMode<AArkanoidArcadeMode>())
+        {
+            Mode->OnBlockDestroyed(DestroyedActor->GetActorLocation(), Blocks.IsEmpty());
         }
     }
 }

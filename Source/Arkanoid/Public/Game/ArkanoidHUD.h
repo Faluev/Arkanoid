@@ -13,6 +13,7 @@ class ARKANOID_API AArkanoidHUD : public AHUD
 
 public:
     virtual void DrawHUD() override;
+    virtual void NotifyHitBoxClick(FName BoxName) override;
 
 private:
     TWeakObjectPtr<APlayingBoard> PlayingBoard;

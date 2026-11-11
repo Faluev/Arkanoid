@@ -28,6 +28,9 @@ protected:
 private:
     FTransform GetBlockTransform(int32 Row, int32 Column) const;
 
+    UFUNCTION()
+    void HandleBlockDestroyed(AActor* DestroyedActor);
+
     UPROPERTY(VisibleAnywhere, Category = "Board")
     TObjectPtr<UInstancedStaticMeshComponent> Preview;
 

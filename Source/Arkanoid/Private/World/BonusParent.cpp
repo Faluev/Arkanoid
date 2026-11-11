@@ -4,6 +4,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
+#include "Game/ArkanoidGameMode.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
@@ -78,6 +80,10 @@ void ABonusParent::NotifyActorBeginOverlap(AActor* OtherActor)
     {
         bCollected = true;
         ApplyTo(*Paddle);
+        if (const AArkanoidArcadeMode* Mode = GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
+        {
+            Mode->OnBonusCollected(GetActorLocation());
+        }
         UE_LOG(LogTemp, Log, TEXT("Arkanoid Bonus %s collected"), *GetClass()->GetName());
         Destroy();
     }
