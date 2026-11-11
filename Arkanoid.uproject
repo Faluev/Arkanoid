@@ -2,7 +2,7 @@
   "FileVersion": 3,
   "EngineAssociation": "5.8",
   "Category": "Games",
-  "Description": "Skillbox 2.6 - Ball Simulation",
+  "Description": "Skillbox Arkanoid",
   "Modules": [
     {
       "Name": "Arkanoid",
@@ -11,6 +11,10 @@
     }
   ],
   "Plugins": [
+    {
+      "Name": "EnhancedInput",
+      "Enabled": true
+    },
     {
       "Enabled": false,
       "Name": "AndroidFileServer"

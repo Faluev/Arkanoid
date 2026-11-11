@@ -2,6 +2,7 @@
 
 #include "World/Ball.h"
 #include "Components/BoxComponent.h"
+#include "World/Paddle.h"
 
 AMyKillZone::AMyKillZone()
 {
@@ -22,6 +23,12 @@ void AMyKillZone::NotifyActorBeginOverlap(AActor* OtherActor)
     // Other dynamic actors can overlap the box, but only balls are removed.
     if (ABall* Ball = Cast<ABall>(OtherActor))
     {
+        if (APaddle* Paddle = Cast<APaddle>(Ball->GetOwner()); Paddle && Paddle->TrySaveBall(Ball))
+        {
+            UE_LOG(LogTemp, Log, TEXT("Arkanoid Ball %s saved by shield"), *Ball->GetName());
+            return;
+        }
+
         const FString BallName = Ball->GetName();
         if (Ball->Destroy())
         {
