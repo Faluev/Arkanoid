@@ -118,6 +118,7 @@ void APaddle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
     UInputAction* LaunchAction = NewObject<UInputAction>(InputMapping);
     InputMapping->MapKey(LaunchAction, EKeys::SpaceBar);
+    InputMapping->MapKey(LaunchAction, EKeys::LeftMouseButton);
     EnhancedInput->BindAction(LaunchAction, ETriggerEvent::Started, this, &APaddle::LaunchBall);
 
     if (!GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
@@ -176,10 +177,16 @@ void APaddle::PrepareBall()
     CurrentBall = GetWorld()->SpawnActor<ABall>(BallClass, Position, FRotator::ZeroRotator, Parameters);
     if (CurrentBall)
     {
-        CurrentBall->HoldForLaunch();
-        CurrentBall->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+        HoldBall(*CurrentBall);
         CurrentBall->OnDestroyed.AddDynamic(this, &APaddle::HandleBallDestroyed);
     }
+}
+
+void APaddle::HoldBall(ABall& Ball)
+{
+    Ball.HoldForLaunch();
+    Ball.SetActorLocation(GetActorLocation() + FVector(BallHoldOffset, 0.0, 0.0));
+    Ball.AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 }
 
 void APaddle::LaunchBall()
@@ -264,5 +271,22 @@ bool APaddle::TrySaveBall(ABall* Ball)
     bShieldActive = false;
     ShieldMesh->SetVisibility(false);
     Ball->BounceFromShield();
+    return true;
+}
+
+void APaddle::ActivateStickyBall()
+{
+    bStickyBallActive = true;
+}
+
+bool APaddle::TryCatchBall(ABall* Ball)
+{
+    if (!bStickyBallActive || !Ball || Ball != CurrentBall || !Ball->IsLaunched())
+    {
+        return false;
+    }
+    // Holding the existing ball preserves its speed/power timers and the player's lives.
+    bStickyBallActive = false;
+    HoldBall(*Ball);
     return true;
 }

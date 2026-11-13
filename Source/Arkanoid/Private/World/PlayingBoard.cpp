@@ -8,10 +8,12 @@
 #include "World/Block.h"
 #include "World/DestroyBlocksBonus.h"
 #include "World/LifeBonus.h"
+#include "World/LineClearBonus.h"
 #include "World/PowerBonus.h"
 #include "World/ShieldBonus.h"
 #include "World/SizeBonus.h"
 #include "World/SpeedBonus.h"
+#include "World/StickyBallBonus.h"
 
 APlayingBoard::APlayingBoard()
 {
@@ -34,13 +36,23 @@ void APlayingBoard::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
     Preview->ClearInstances();
+    UStaticMesh* PreviewMesh = BlockMesh;
+    if (!PreviewMesh)
+    {
+        PreviewMesh = GetDefault<APlayingBoard>()->Preview->GetStaticMesh();
+    }
+    Preview->SetStaticMesh(PreviewMesh);
+    Preview->SetMaterial(0, BlockMaterial);
 
-    // Show the grid in the editor without placing gameplay actors.
+    // Editor preview and runtime spawns use the same cells and transforms.
     for (int32 Row = 0; Row < Rows; ++Row)
     {
         for (int32 Column = 0; Column < Columns; ++Column)
         {
-            Preview->AddInstance(GetBlockTransform(Row, Column));
+            if (HasCell(Row, Column))
+            {
+                Preview->AddInstance(GetBlockTransform(Row, Column));
+            }
         }
     }
 }
@@ -56,29 +68,54 @@ void APlayingBoard::BeginPlay()
         return;
     }
 
-    // Put every bonus in the front row so each one is reachable at the start.
-    const TSubclassOf<ABonusParent> BonusClasses[] = {
+    const TSubclassOf<ABonusParent> OriginalBonuses[] = {
         ASizeBonus::StaticClass(), ALifeBonus::StaticClass(), ASpeedBonus::StaticClass(),
         APowerBonus::StaticClass(), ADestroyBlocksBonus::StaticClass(), AShieldBonus::StaticClass()
     };
+    const TSubclassOf<ABonusParent> DiplomaBonuses[] = {
+        ASizeBonus::StaticClass(), ALifeBonus::StaticClass(), AStickyBallBonus::StaticClass(), ALineClearBonus::StaticClass(),
+        ASpeedBonus::StaticClass(), APowerBonus::StaticClass(), ADestroyBlocksBonus::StaticClass(), AShieldBonus::StaticClass()
+    };
+    TSet<int32> ColumnsWithBonus;
+    int32 NextReserveBonus = Columns;
 
     for (int32 Row = 0; Row < Rows; ++Row)
     {
         for (int32 Column = 0; Column < Columns; ++Column)
         {
+            if (!HasCell(Row, Column))
+            {
+                continue;
+            }
+
             const FTransform BlockTransform = GetBlockTransform(Row, Column) * GetActorTransform();
             ABlock* Block = World->SpawnActorDeferred<ABlock>(BlockClass, BlockTransform, this, nullptr,
                 ESpawnActorCollisionHandlingMethod::AlwaysSpawn, ESpawnActorScaleMethod::OverrideRootScale);
             if (Block)
             {
                 TSubclassOf<ABonusParent> BonusClass;
-                FLinearColor Color(0.26f, 0.44f, 0.57f);
-                if (Row == 0)
+                if (bEnableDiplomaBonuses)
                 {
-                    BonusClass = BonusClasses[Column % UE_ARRAY_COUNT(BonusClasses)];
-                    Color = BonusClass->GetDefaultObject<ABonusParent>()->GetColor();
+                    // The frontmost cell of each column drops a bonus even in a shaped layout.
+                    if (!ColumnsWithBonus.Contains(Column))
+                    {
+                        ColumnsWithBonus.Add(Column);
+                        BonusClass = DiplomaBonuses[Column % UE_ARRAY_COUNT(DiplomaBonuses)];
+                    }
+                    else if (NextReserveBonus < UE_ARRAY_COUNT(DiplomaBonuses))
+                    {
+                        BonusClass = DiplomaBonuses[NextReserveBonus++];
+                    }
                 }
-                Block->Init(Row + 1, BonusClass, Color);
+                else if (Row == 0)
+                {
+                    BonusClass = OriginalBonuses[Column % UE_ARRAY_COUNT(OriginalBonuses)];
+                }
+
+                const FLinearColor Color = BonusClass ? BonusClass->GetDefaultObject<ABonusParent>()->GetColor() : BoardColor;
+                const int32 Life = bEnableDiplomaBonuses ? FMath::Min(Row + 1, 3) : Row + 1;
+                Block->Init(Life, BonusClass, Color, Row, Column);
+                Block->SetBoardAppearance(BlockMesh, BlockMaterial);
                 Block->FinishSpawning(BlockTransform, false, nullptr, ESpawnActorScaleMethod::OverrideRootScale);
                 Blocks.Add(Block);
                 Block->OnDestroyed.AddDynamic(this, &APlayingBoard::HandleBlockDestroyed);
@@ -141,9 +178,50 @@ void APlayingBoard::DestroyRandomBlocks(int32 Count)
     }
 }
 
+void APlayingBoard::DestroyColumn(int32 Column)
+{
+    if (Column < 0 || Column >= Columns)
+    {
+        return;
+    }
+
+    // Destruction removes cells from Blocks, so collect the affected actors first.
+    TArray<ABlock*> ColumnBlocks;
+    for (ABlock* Block : Blocks)
+    {
+        if (IsValid(Block) && Block->GetBoardColumn() == Column)
+        {
+            ColumnBlocks.Add(Block);
+        }
+    }
+    for (ABlock* Block : ColumnBlocks)
+    {
+        if (IsValid(Block))
+        {
+            Block->Destroy();
+        }
+    }
+}
+
+bool APlayingBoard::HasCell(int32 Row, int32 Column) const
+{
+    if (Layout == EArkanoidBoardLayout::Diamond)
+    {
+        const int32 Indent = FMath::Clamp((Rows - 1) / 2 - FMath::Min(Row, Rows - 1 - Row), 0, (Columns - 1) / 2);
+        return Column >= Indent && Column < Columns - Indent;
+    }
+    if (Layout == EArkanoidBoardLayout::SplitWings)
+    {
+        const bool bCenterGap = Columns >= 5 && Column == Columns / 2 && Row < FMath::Min(2, Rows - 1);
+        const bool bTrimmedCorner = Rows >= 4 && Row == Rows - 1 && (Column == 0 || Column == Columns - 1);
+        return !bCenterGap && !bTrimmedCorner;
+    }
+    return true;
+}
+
 FTransform APlayingBoard::GetBlockTransform(int32 Row, int32 Column) const
 {
     const double CenteredColumn = Column - (Columns - 1) * 0.5;
     const FVector Location(Row * RowSpacing, CenteredColumn * ColumnSpacing, 0.0);
-    return FTransform(FRotator::ZeroRotator, Location, FVector(0.84, 1.16, 0.50));
+    return FTransform(FRotator::ZeroRotator, Location, BlockScale);
 }

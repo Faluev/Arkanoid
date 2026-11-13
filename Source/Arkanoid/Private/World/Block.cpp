@@ -9,6 +9,7 @@
 #include "World/Ball.h"
 #include "World/BonusParent.h"
 #include "World/LifeComponent.h"
+#include "World/PlayingBoard.h"
 
 ABlock::ABlock()
 {
@@ -36,11 +37,26 @@ ABlock::ABlock()
     LifeComponent = CreateDefaultSubobject<ULifeComponent>(TEXT("Life"));
 }
 
-void ABlock::Init(int32 LifeAmount, TSubclassOf<ABonusParent> NewBonusClass, const FLinearColor& NewColor)
+void ABlock::Init(int32 LifeAmount, TSubclassOf<ABonusParent> NewBonusClass, const FLinearColor& NewColor,
+    int32 Row, int32 Column)
 {
     LifeComponent->SetLife(LifeAmount);
     BonusClass = NewBonusClass;
     Color = NewColor;
+    BoardRow = Row;
+    BoardColumn = Column;
+}
+
+void ABlock::SetBoardAppearance(UStaticMesh* BlockMesh, UMaterialInterface* BlockMaterial)
+{
+    if (BlockMesh)
+    {
+        Mesh->SetStaticMesh(BlockMesh);
+    }
+    if (BlockMaterial)
+    {
+        Mesh->SetMaterial(0, BlockMaterial);
+    }
 }
 
 void ABlock::BeginPlay()
@@ -67,7 +83,10 @@ void ABlock::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveCom
         return;
     }
 
-    LifeComponent->ApplyDamage(Ball->GetPower());
+    const APlayingBoard* Board = Cast<APlayingBoard>(GetOwner());
+    // The diploma's power bonus clears armored blocks in one shot while active.
+    const int32 Damage = Board && Board->UsesDiplomaBonuses() && Ball->GetPower() > 1 ? GetLife() : Ball->GetPower();
+    LifeComponent->ApplyDamage(Damage);
     UE_LOG(LogTemp, Log, TEXT("Arkanoid Block %s hit, life %d"), *GetName(), GetLife());
     if (GetLife() > 0)
     {
@@ -78,9 +97,13 @@ void ABlock::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveCom
     if (UWorld* World = GetWorld(); World && BonusClass)
     {
         // The board owns the bonus so it can affect this board's blocks.
-        FActorSpawnParameters SpawnParameters;
-        SpawnParameters.Owner = GetOwner();
-        World->SpawnActor<ABonusParent>(BonusClass, GetActorLocation(), FRotator::ZeroRotator, SpawnParameters);
+        const FTransform BonusTransform(GetActorLocation());
+        if (ABonusParent* Bonus = World->SpawnActorDeferred<ABonusParent>(BonusClass, BonusTransform,
+            GetOwner(), nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn))
+        {
+            Bonus->SetSourceCell(BoardRow, BoardColumn);
+            Bonus->FinishSpawning(BonusTransform);
+        }
     }
     Destroy();
 }

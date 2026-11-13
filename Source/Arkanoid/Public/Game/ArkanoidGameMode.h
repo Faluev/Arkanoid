@@ -47,6 +47,10 @@ public:
     UFUNCTION(BlueprintPure, Category = "Arkanoid|Score")
     int32 GetBestScore() const;
 
+    float GetRunTime() const;
+
+    float GetBonusFlash() const;
+
     UFUNCTION(BlueprintPure, Category = "Arkanoid|Round")
     bool HasFinished() const { return bFinished; }
 
@@ -66,6 +70,9 @@ private:
     TObjectPtr<UParticleSystem> BlockEffect;
 
     int32 Score = 0;
+    float StartSeconds = 0.0f;
+    float FinalRunTime = 0.0f;
+    mutable float LastBonusTime = -10.0f;
     bool bFinished = false;
     bool bWon = false;
 };

@@ -6,7 +6,9 @@
 
 class ABonusParent;
 class ULifeComponent;
+class UMaterialInterface;
 class UMaterialInstanceDynamic;
+class UStaticMesh;
 class UStaticMeshComponent;
 
 UCLASS()
@@ -17,13 +19,21 @@ class ARKANOID_API ABlock : public AActor
 public:
     ABlock();
 
-    void Init(int32 LifeAmount, TSubclassOf<ABonusParent> NewBonusClass, const FLinearColor& NewColor);
+    void Init(int32 LifeAmount, TSubclassOf<ABonusParent> NewBonusClass, const FLinearColor& NewColor,
+        int32 Row, int32 Column);
+    void SetBoardAppearance(UStaticMesh* BlockMesh, UMaterialInterface* BlockMaterial);
 
     UFUNCTION(BlueprintPure, Category = "Block")
     int32 GetLife() const;
 
     UFUNCTION(BlueprintPure, Category = "Block")
     TSubclassOf<ABonusParent> GetBonusClass() const { return BonusClass; }
+
+    UFUNCTION(BlueprintPure, Category = "Block")
+    int32 GetBoardRow() const { return BoardRow; }
+
+    UFUNCTION(BlueprintPure, Category = "Block")
+    int32 GetBoardColumn() const { return BoardColumn; }
 
 protected:
     virtual void BeginPlay() override;
@@ -49,4 +59,6 @@ private:
     TObjectPtr<UMaterialInstanceDynamic> Material;
 
     int32 InitialLife = 1;
+    int32 BoardRow = INDEX_NONE;
+    int32 BoardColumn = INDEX_NONE;
 };

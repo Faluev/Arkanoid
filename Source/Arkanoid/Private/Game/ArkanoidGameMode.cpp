@@ -17,6 +17,12 @@ namespace
 {
 constexpr int32 PointsPerBlock = 100;
 
+bool UsesOrbitalPresentation(const UWorld* World)
+{
+    const auto* Player = Cast<AArkanoidArcadeController>(World->GetFirstPlayerController());
+    return Player && Player->IsOrbitalGame();
+}
+
 template <typename AssetType>
 AssetType* LoadCourseAsset(const TCHAR* Path)
 {
@@ -44,8 +50,10 @@ void AArkanoidGameMode::StartPlay()
         return;
     }
 
-    MenuClick = LoadCourseAsset<USoundBase>(
-        TEXT("/Game/Art/Sounds/Cues/Futuristic_Click_01_Cue.Futuristic_Click_01_Cue"));
+    const bool bOrbital = UsesOrbitalPresentation(GetWorld());
+    MenuClick = LoadCourseAsset<USoundBase>(bOrbital
+        ? TEXT("/Game/Arkanoid/Orbital/Audio/S_OrbitalClick.S_OrbitalClick")
+        : TEXT("/Game/Art/Sounds/Cues/Futuristic_Click_01_Cue.Futuristic_Click_01_Cue"));
     UMaterialInterface* FloorMaterial = LoadCourseAsset<UMaterialInterface>(
         TEXT("/Game/Art/BasicMeshes/Materials/MI_Floor.MI_Floor"));
     UStaticMesh* FabRock = LoadCourseAsset<UStaticMesh>(
@@ -92,16 +100,34 @@ AArkanoidArcadeMode::AArkanoidArcadeMode()
 void AArkanoidArcadeMode::StartPlay()
 {
     Super::StartPlay();
-    BlockSound = LoadCourseAsset<USoundBase>(
-        TEXT("/Game/Art/Sounds/Cues/Abstract_Pop_01_Cue.Abstract_Pop_01_Cue"));
-    PickupSound = LoadCourseAsset<USoundBase>(TEXT("/Game/Art/Sounds/Cues/Coins_01_Cue.Coins_01_Cue"));
-    BlockEffect = LoadCourseAsset<UParticleSystem>(TEXT("/Game/Art/Starter/VFX/P_Explosion.P_Explosion"));
+    StartSeconds = GetWorld()->GetTimeSeconds();
+    const bool bOrbital = UsesOrbitalPresentation(GetWorld());
+    BlockSound = LoadCourseAsset<USoundBase>(bOrbital
+        ? TEXT("/Game/Arkanoid/Orbital/Audio/S_OrbitalBlock.S_OrbitalBlock")
+        : TEXT("/Game/Art/Sounds/Cues/Abstract_Pop_01_Cue.Abstract_Pop_01_Cue"));
+    PickupSound = LoadCourseAsset<USoundBase>(bOrbital
+        ? TEXT("/Game/Arkanoid/Orbital/Audio/S_OrbitalPickup.S_OrbitalPickup")
+        : TEXT("/Game/Art/Sounds/Cues/Coins_01_Cue.Coins_01_Cue"));
+    if (!bOrbital)
+    {
+        BlockEffect = LoadCourseAsset<UParticleSystem>(TEXT("/Game/Art/Starter/VFX/P_Explosion.P_Explosion"));
+    }
 }
 
 int32 AArkanoidArcadeMode::GetBestScore() const
 {
     const UArkanoidGameInstance* Instance = GetGameInstance<UArkanoidGameInstance>();
     return Instance ? Instance->GetBestScore() : 0;
+}
+
+float AArkanoidArcadeMode::GetRunTime() const
+{
+    return bFinished ? FinalRunTime : GetWorld()->GetTimeSeconds() - StartSeconds;
+}
+
+float AArkanoidArcadeMode::GetBonusFlash() const
+{
+    return FMath::Clamp(1.0f - (GetWorld()->GetTimeSeconds() - LastBonusTime) / 1.25f, 0.0f, 1.0f);
 }
 
 void AArkanoidArcadeMode::OnBlockDestroyed(const FVector& Location, bool bBoardCleared)
@@ -135,6 +161,7 @@ void AArkanoidArcadeMode::OnBlockDestroyed(const FVector& Location, bool bBoardC
 
 void AArkanoidArcadeMode::OnBonusCollected(const FVector& Location) const
 {
+    LastBonusTime = GetWorld()->GetTimeSeconds();
     if (PickupSound)
     {
         UGameplayStatics::PlaySoundAtLocation(this, PickupSound, Location);
@@ -152,6 +179,7 @@ void AArkanoidArcadeMode::FinishRound(bool bVictory)
     {
         return;
     }
+    FinalRunTime = GetRunTime();
     bFinished = true;
     bWon = bVictory;
     UE_LOG(LogTemp, Log, TEXT("Arkanoid round %s with score %d"), bWon ? TEXT("won") : TEXT("lost"), Score);
@@ -171,9 +199,11 @@ AArkanoidMenuMode::AArkanoidMenuMode()
 void AArkanoidMenuMode::StartPlay()
 {
     Super::StartPlay();
-    if (USoundBase* Music = LoadCourseAsset<USoundBase>(
-        TEXT("/Game/Art/Music/itty-bitty-8-bit_Cue.itty-bitty-8-bit_Cue")))
+    const bool bOrbital = UsesOrbitalPresentation(GetWorld());
+    if (USoundBase* Music = LoadCourseAsset<USoundBase>(bOrbital
+        ? TEXT("/Game/Arkanoid/Orbital/Audio/S_OrbitalMenu.S_OrbitalMenu")
+        : TEXT("/Game/Art/Music/itty-bitty-8-bit_Cue.itty-bitty-8-bit_Cue")))
     {
-        UGameplayStatics::SpawnSound2D(this, Music, 0.24f);
+        UGameplayStatics::SpawnSound2D(this, Music, bOrbital ? 0.60f : 0.24f);
     }
 }

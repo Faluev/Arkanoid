@@ -17,4 +17,5 @@ public:
 
 private:
     TWeakObjectPtr<APlayingBoard> PlayingBoard;
+    int32 StartingBlockCount = 0;
 };

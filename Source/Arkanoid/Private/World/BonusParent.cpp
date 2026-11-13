@@ -71,6 +71,12 @@ void ABonusParent::Tick(float DeltaTime)
     AddActorWorldOffset(FVector(-FallSpeed * DeltaTime, 0.0, 0.0), true);
 }
 
+void ABonusParent::SetSourceCell(int32 Row, int32 Column)
+{
+    SourceRow = Row;
+    SourceColumn = Column;
+}
+
 void ABonusParent::NotifyActorBeginOverlap(AActor* OtherActor)
 {
     Super::NotifyActorBeginOverlap(OtherActor);

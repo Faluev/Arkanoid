@@ -82,12 +82,19 @@ void ABall::Tick(float DeltaTime)
             return;
         }
 
-        // Reverse the component of travel along the surface normal.
-        Direction = (Direction - 2.0 * FVector::DotProduct(Direction, Hit.Normal) * Hit.Normal).GetSafeNormal2D();
-        if (const APaddle* Paddle = Cast<APaddle>(Hit.GetActor()); Paddle && Hit.Normal.X > 0.5)
+        if (APaddle* Paddle = Cast<APaddle>(Hit.GetActor()); Paddle && Hit.Normal.X > 0.5)
         {
+            if (Direction.X < 0.0 && Paddle->TryCatchBall(this))
+            {
+                return;
+            }
             const double Offset = (GetActorLocation().Y - Paddle->GetActorLocation().Y) / Paddle->GetHalfWidth();
             Direction = FVector(1.0, FMath::Clamp(Offset, -1.0, 1.0), 0.0).GetSafeNormal2D();
+        }
+        else
+        {
+            // Reverse the component of travel along the surface normal.
+            Direction = (Direction - 2.0 * FVector::DotProduct(Direction, Hit.Normal) * Hit.Normal).GetSafeNormal2D();
         }
         Distance *= 1.0 - Hit.Time;
         UE_LOG(LogTemp, Log, TEXT("Arkanoid Ball %s reflected"), *GetName());

@@ -38,6 +38,12 @@ public:
     UFUNCTION(BlueprintPure, Category = "Paddle")
     bool HasShield() const { return bShieldActive; }
 
+    UFUNCTION(BlueprintCallable, Category = "Paddle")
+    void ActivateStickyBall();
+
+    UFUNCTION(BlueprintPure, Category = "Paddle")
+    bool HasStickyBall() const { return bStickyBallActive; }
+
     UFUNCTION(BlueprintPure, Category = "Paddle")
     int32 GetLives() const { return Lives; }
 
@@ -52,6 +58,7 @@ public:
 
     float GetHalfWidth() const;
     bool TrySaveBall(ABall* Ball);
+    bool TryCatchBall(ABall* Ball);
 
 protected:
     virtual void BeginPlay() override;
@@ -62,6 +69,7 @@ private:
     void StopMoving();
     void RestartLevel();
     void PrepareBall();
+    void HoldBall(ABall& Ball);
     void ResetSizeBonus();
     void SetPaddleSize(float Multiplier);
 
@@ -102,4 +110,5 @@ private:
     float SizeMultiplier = 1.0f;
     int32 Lives = 0;
     bool bShieldActive = false;
+    bool bStickyBallActive = false;
 };
