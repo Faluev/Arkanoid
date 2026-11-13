@@ -20,7 +20,7 @@ Arkanoid Orbital — аркада о расчистке трёх отсеков 
 
 ### Запуск дипломной версии
 
-- **Windows.** Скачайте `Arkanoid_Orbital_Windows.zip` из [Releases](https://github.com/Faluev/Arkanoid/releases/tag/v2.1.0), распакуйте весь архив и запустите `Windows/Arkanoid.exe`.
+- **Windows.** Скачайте `Arkanoid_Orbital_Windows_2.1.0.zip` из [Releases](https://github.com/Faluev/Arkanoid/releases/tag/v2.1.0), распакуйте весь архив и запустите `Windows/Arkanoid.exe`.
 - **Unreal Editor.** Откройте `Arkanoid.uproject` в UE 5.8.4. Для компиляции нужны MSVC v143 и Windows SDK. Стартовая карта `L_OrbitalMenu`. Для проверки конкретной арены откройте одну из трёх карт в `Content/Arkanoid/Maps`.
 
 Оформление дипломной версии 2.1.0 входит в репозиторий. Три арены, модели астероидов и станции, материалы, иллюстрация для меню и звуки лежат в `Content/Arkanoid`. В редакторе и в Windows-сборке используются эти же ассеты. Для запуска диплома достаточно проекта и Unreal Engine, установка Fab не требуется.
