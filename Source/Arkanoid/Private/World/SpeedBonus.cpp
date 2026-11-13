@@ -6,6 +6,7 @@
 ASpeedBonus::ASpeedBonus()
 {
     Color = FLinearColor(1.00f, 0.68f, 0.12f);
+    DisplayName = NSLOCTEXT("ArkanoidBonus", "Speed", "Slow ball");
     Symbol = TEXT("SPD");
 }
 

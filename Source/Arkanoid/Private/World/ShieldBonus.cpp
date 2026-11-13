@@ -5,6 +5,7 @@
 AShieldBonus::AShieldBonus()
 {
     Color = FLinearColor(0.96f, 0.26f, 0.61f);
+    DisplayName = NSLOCTEXT("ArkanoidBonus", "Shield", "Shield");
     Symbol = TEXT("SH");
 }
 

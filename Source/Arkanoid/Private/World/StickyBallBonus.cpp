@@ -5,6 +5,7 @@
 AStickyBallBonus::AStickyBallBonus()
 {
     Color = FLinearColor(0.48f, 0.85f, 1.0f);
+    DisplayName = NSLOCTEXT("ArkanoidBonus", "Sticky", "Sticky ball");
     Symbol = TEXT("S");
 }
 

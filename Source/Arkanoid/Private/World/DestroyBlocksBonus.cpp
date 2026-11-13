@@ -5,6 +5,7 @@
 ADestroyBlocksBonus::ADestroyBlocksBonus()
 {
     Color = FLinearColor(1.00f, 0.31f, 0.16f);
+    DisplayName = NSLOCTEXT("ArkanoidBonus", "DestroyBlocks", "Destroy blocks");
     Symbol = TEXT("-3");
 }
 

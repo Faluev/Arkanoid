@@ -5,6 +5,7 @@
 ASizeBonus::ASizeBonus()
 {
     Color = FLinearColor(0.20f, 0.85f, 0.52f);
+    DisplayName = NSLOCTEXT("ArkanoidBonus", "Size", "Wider paddle");
     Symbol = TEXT("SIZE");
 }
 

@@ -6,6 +6,6 @@ public class Arkanoid : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine" });
-        PrivateDependencyModuleNames.AddRange(new[] { "EnhancedInput", "InputCore" });
+        PrivateDependencyModuleNames.AddRange(new[] { "EnhancedInput", "InputCore", "SlateCore" });
     }
 }

@@ -3,6 +3,8 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
+#include "Game/ArkanoidGameMode.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
@@ -90,6 +92,10 @@ void ABall::Tick(float DeltaTime)
             }
             const double Offset = (GetActorLocation().Y - Paddle->GetActorLocation().Y) / Paddle->GetHalfWidth();
             Direction = FVector(1.0, FMath::Clamp(Offset, -1.0, 1.0), 0.0).GetSafeNormal2D();
+            if (AArkanoidArcadeMode* Mode = GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
+            {
+                Mode->AddOrbitalFeedback(EOrbitalFeedbackKind::PaddleBounce, Hit.ImpactPoint, Direction);
+            }
         }
         else
         {
@@ -113,6 +119,10 @@ void ABall::Launch(const FVector& LaunchDirection)
     DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
     bLaunched = true;
     SetActorEnableCollision(true);
+    if (AArkanoidArcadeMode* Mode = GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
+    {
+        Mode->AddOrbitalFeedback(EOrbitalFeedbackKind::Launch, GetActorLocation(), Direction);
+    }
 }
 
 void ABall::BounceFromShield()
@@ -123,6 +133,11 @@ void ABall::BounceFromShield()
     bShieldBounceThisMove = true;
     Direction.X = FMath::Max(FMath::Abs(Direction.X), 0.45);
     Direction = Direction.GetSafeNormal2D();
+    if (AArkanoidArcadeMode* Mode = GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
+    {
+        Mode->AddOrbitalFeedback(EOrbitalFeedbackKind::ShieldSave, GetActorLocation(), Direction,
+            FLinearColor(0.96f, 0.26f, 0.61f));
+    }
 }
 
 void ABall::ApplySpeedBonus(float Multiplier, float Duration)

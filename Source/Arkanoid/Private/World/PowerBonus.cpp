@@ -6,6 +6,7 @@
 APowerBonus::APowerBonus()
 {
     Color = FLinearColor(0.62f, 0.31f, 1.00f);
+    DisplayName = NSLOCTEXT("ArkanoidBonus", "Power", "Power ball");
     Symbol = TEXT("POW");
 }
 

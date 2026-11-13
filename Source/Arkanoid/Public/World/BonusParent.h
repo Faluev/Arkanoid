@@ -37,6 +37,7 @@ protected:
     virtual void ApplyTo(APaddle& Paddle) const PURE_VIRTUAL(ABonusParent::ApplyTo, );
 
     FLinearColor Color = FLinearColor::White;
+    FText DisplayName;
     FString Symbol;
 
 private:

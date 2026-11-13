@@ -7,6 +7,28 @@
 class UParticleSystem;
 class USoundBase;
 
+enum class EOrbitalFeedbackKind : uint8
+{
+    Launch,
+    PaddleBounce,
+    StickyCatch,
+    ShieldSave,
+    BlockHit,
+    BlockDestroyed,
+    BonusPickedUp,
+    LineClear
+};
+
+struct FOrbitalFeedbackEvent
+{
+    FVector Position;
+    FVector Direction;
+    FLinearColor Color;
+    float StartSeconds;
+    EOrbitalFeedbackKind Kind;
+    float Extent = 0.0f;
+};
+
 UCLASS()
 class ARKANOID_API AArkanoidGameMode : public AGameModeBase
 {
@@ -37,9 +59,14 @@ public:
 
     virtual void StartPlay() override;
 
-    void OnBlockDestroyed(const FVector& Location, bool bBoardCleared);
-    void OnBonusCollected(const FVector& Location) const;
+    void OnBlockDestroyed(const FVector& Location, bool bBoardCleared, const FLinearColor& Color);
+    void OnBonusCollected(const FVector& Location, const FText& Name, const FLinearColor& Color);
     void OnLivesDepleted();
+    void AddOrbitalFeedback(EOrbitalFeedbackKind Kind, const FVector& Position,
+        const FVector& Direction = FVector::ZeroVector, const FLinearColor& Color = FLinearColor::White,
+        float Extent = 0.0f);
+    const TArray<FOrbitalFeedbackEvent>& GetOrbitalFeedback() const { return OrbitalFeedback; }
+    const FText& GetLastBonusName() const { return LastBonusName; }
 
     UFUNCTION(BlueprintPure, Category = "Arkanoid|Score")
     int32 GetScore() const { return Score; }
@@ -72,7 +99,10 @@ private:
     int32 Score = 0;
     float StartSeconds = 0.0f;
     float FinalRunTime = 0.0f;
-    mutable float LastBonusTime = -10.0f;
+    float LastBonusTime = -10.0f;
+    TArray<FOrbitalFeedbackEvent> OrbitalFeedback;
+    FText LastBonusName;
+    bool bOrbitalPresentation = false;
     bool bFinished = false;
     bool bWon = false;
 };

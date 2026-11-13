@@ -286,6 +286,11 @@ bool APaddle::TryCatchBall(ABall* Ball)
         return false;
     }
     // Holding the existing ball preserves its speed/power timers and the player's lives.
+    if (AArkanoidArcadeMode* Mode = GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
+    {
+        Mode->AddOrbitalFeedback(EOrbitalFeedbackKind::StickyCatch, Ball->GetActorLocation(),
+            FVector::ZeroVector, FLinearColor(0.48f, 0.85f, 1.0f));
+    }
     bStickyBallActive = false;
     HoldBall(*Ball);
     return true;

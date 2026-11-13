@@ -5,6 +5,7 @@
 ALifeBonus::ALifeBonus()
 {
     Color = FLinearColor(0.14f, 0.64f, 1.00f);
+    DisplayName = NSLOCTEXT("ArkanoidBonus", "Life", "Extra life");
     Symbol = TEXT("+1");
 }
 

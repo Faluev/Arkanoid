@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "Game/ArkanoidGameMode.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
@@ -91,6 +92,10 @@ void ABlock::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveCom
     if (GetLife() > 0)
     {
         UpdateAppearance();
+        if (AArkanoidArcadeMode* Mode = GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
+        {
+            Mode->AddOrbitalFeedback(EOrbitalFeedbackKind::BlockHit, HitLocation, FVector::ZeroVector, Color);
+        }
         return;
     }
 

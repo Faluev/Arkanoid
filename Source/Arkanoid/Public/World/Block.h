@@ -35,6 +35,8 @@ public:
     UFUNCTION(BlueprintPure, Category = "Block")
     int32 GetBoardColumn() const { return BoardColumn; }
 
+    FLinearColor GetBlockColor() const { return Color; }
+
 protected:
     virtual void BeginPlay() override;
     virtual void NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp,

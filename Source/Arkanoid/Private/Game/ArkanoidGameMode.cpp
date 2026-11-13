@@ -54,6 +54,10 @@ void AArkanoidGameMode::StartPlay()
     MenuClick = LoadCourseAsset<USoundBase>(bOrbital
         ? TEXT("/Game/Arkanoid/Orbital/Audio/S_OrbitalClick.S_OrbitalClick")
         : TEXT("/Game/Art/Sounds/Cues/Futuristic_Click_01_Cue.Futuristic_Click_01_Cue"));
+    if (bOrbital)
+    {
+        return;
+    }
     UMaterialInterface* FloorMaterial = LoadCourseAsset<UMaterialInterface>(
         TEXT("/Game/Art/BasicMeshes/Materials/MI_Floor.MI_Floor"));
     UStaticMesh* FabRock = LoadCourseAsset<UStaticMesh>(
@@ -101,14 +105,14 @@ void AArkanoidArcadeMode::StartPlay()
 {
     Super::StartPlay();
     StartSeconds = GetWorld()->GetTimeSeconds();
-    const bool bOrbital = UsesOrbitalPresentation(GetWorld());
-    BlockSound = LoadCourseAsset<USoundBase>(bOrbital
+    bOrbitalPresentation = UsesOrbitalPresentation(GetWorld());
+    BlockSound = LoadCourseAsset<USoundBase>(bOrbitalPresentation
         ? TEXT("/Game/Arkanoid/Orbital/Audio/S_OrbitalBlock.S_OrbitalBlock")
         : TEXT("/Game/Art/Sounds/Cues/Abstract_Pop_01_Cue.Abstract_Pop_01_Cue"));
-    PickupSound = LoadCourseAsset<USoundBase>(bOrbital
+    PickupSound = LoadCourseAsset<USoundBase>(bOrbitalPresentation
         ? TEXT("/Game/Arkanoid/Orbital/Audio/S_OrbitalPickup.S_OrbitalPickup")
         : TEXT("/Game/Art/Sounds/Cues/Coins_01_Cue.Coins_01_Cue"));
-    if (!bOrbital)
+    if (!bOrbitalPresentation)
     {
         BlockEffect = LoadCourseAsset<UParticleSystem>(TEXT("/Game/Art/Starter/VFX/P_Explosion.P_Explosion"));
     }
@@ -130,7 +134,7 @@ float AArkanoidArcadeMode::GetBonusFlash() const
     return FMath::Clamp(1.0f - (GetWorld()->GetTimeSeconds() - LastBonusTime) / 1.25f, 0.0f, 1.0f);
 }
 
-void AArkanoidArcadeMode::OnBlockDestroyed(const FVector& Location, bool bBoardCleared)
+void AArkanoidArcadeMode::OnBlockDestroyed(const FVector& Location, bool bBoardCleared, const FLinearColor& Color)
 {
     if (bFinished)
     {
@@ -144,6 +148,7 @@ void AArkanoidArcadeMode::OnBlockDestroyed(const FVector& Location, bool bBoardC
     }
     UE_LOG(LogTemp, Log, TEXT("Arkanoid score %d, best %d"), Score, GetBestScore());
 
+    AddOrbitalFeedback(EOrbitalFeedbackKind::BlockDestroyed, Location, FVector::ZeroVector, Color);
     if (BlockSound)
     {
         UGameplayStatics::PlaySoundAtLocation(this, BlockSound, Location);
@@ -159,12 +164,65 @@ void AArkanoidArcadeMode::OnBlockDestroyed(const FVector& Location, bool bBoardC
     }
 }
 
-void AArkanoidArcadeMode::OnBonusCollected(const FVector& Location) const
+void AArkanoidArcadeMode::OnBonusCollected(const FVector& Location, const FText& Name, const FLinearColor& Color)
 {
     LastBonusTime = GetWorld()->GetTimeSeconds();
+    LastBonusName = Name;
+    AddOrbitalFeedback(EOrbitalFeedbackKind::BonusPickedUp, Location, FVector::ZeroVector, Color);
     if (PickupSound)
     {
         UGameplayStatics::PlaySoundAtLocation(this, PickupSound, Location);
+    }
+}
+
+void AArkanoidArcadeMode::AddOrbitalFeedback(EOrbitalFeedbackKind Kind, const FVector& Position,
+    const FVector& Direction, const FLinearColor& Color, float Extent)
+{
+    if (!bOrbitalPresentation || bFinished)
+    {
+        return;
+    }
+
+    // Expired entries cannot hold up a frame even during a long round.
+    constexpr float FeedbackLifetime = 1.25f;
+    constexpr int32 MaxFeedbackEvents = 32;
+    const float Now = GetWorld()->GetTimeSeconds();
+    OrbitalFeedback.RemoveAll([Now](const FOrbitalFeedbackEvent& Event)
+    {
+        return Now - Event.StartSeconds >= FeedbackLifetime;
+    });
+    if (OrbitalFeedback.Num() == MaxFeedbackEvents)
+    {
+        OrbitalFeedback.RemoveAt(0, 1, EAllowShrinking::No);
+    }
+    OrbitalFeedback.Add({Position, Direction, Color, Now, Kind, Extent});
+
+    switch (Kind)
+    {
+    case EOrbitalFeedbackKind::Launch:
+        if (BlockSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, BlockSound, Position, 0.64f, 1.42f);
+        }
+        break;
+    case EOrbitalFeedbackKind::PaddleBounce:
+    case EOrbitalFeedbackKind::BlockHit:
+        if (BlockSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, BlockSound, Position, 0.36f,
+                Kind == EOrbitalFeedbackKind::PaddleBounce ? 1.20f : 0.82f);
+        }
+        break;
+    case EOrbitalFeedbackKind::StickyCatch:
+    case EOrbitalFeedbackKind::ShieldSave:
+        if (PickupSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, PickupSound, Position, 0.48f,
+                Kind == EOrbitalFeedbackKind::StickyCatch ? 0.87f : 1.14f);
+        }
+        break;
+    default:
+        break;
     }
 }
 

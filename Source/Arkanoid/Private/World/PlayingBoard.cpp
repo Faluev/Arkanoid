@@ -126,7 +126,8 @@ void APlayingBoard::BeginPlay()
 
 void APlayingBoard::HandleBlockDestroyed(AActor* DestroyedActor)
 {
-    const int32 Index = Blocks.IndexOfByKey(Cast<ABlock>(DestroyedActor));
+    ABlock* Block = Cast<ABlock>(DestroyedActor);
+    const int32 Index = Blocks.IndexOfByKey(Block);
     if (Index == INDEX_NONE)
     {
         return;
@@ -139,7 +140,7 @@ void APlayingBoard::HandleBlockDestroyed(AActor* DestroyedActor)
     {
         if (AArkanoidArcadeMode* Mode = World->GetAuthGameMode<AArkanoidArcadeMode>())
         {
-            Mode->OnBlockDestroyed(DestroyedActor->GetActorLocation(), Blocks.IsEmpty());
+            Mode->OnBlockDestroyed(Block->GetActorLocation(), Blocks.IsEmpty(), Block->GetBlockColor());
         }
     }
 }
@@ -187,11 +188,32 @@ void APlayingBoard::DestroyColumn(int32 Column)
 
     // Destruction removes cells from Blocks, so collect the affected actors first.
     TArray<ABlock*> ColumnBlocks;
+    const ABlock* FirstBlock = nullptr;
+    const ABlock* LastBlock = nullptr;
     for (ABlock* Block : Blocks)
     {
         if (IsValid(Block) && Block->GetBoardColumn() == Column)
         {
             ColumnBlocks.Add(Block);
+            if (!FirstBlock || Block->GetBoardRow() < FirstBlock->GetBoardRow())
+            {
+                FirstBlock = Block;
+            }
+            if (!LastBlock || Block->GetBoardRow() > LastBlock->GetBoardRow())
+            {
+                LastBlock = Block;
+            }
+        }
+    }
+    if (FirstBlock && LastBlock)
+    {
+        if (AArkanoidArcadeMode* Mode = GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
+        {
+            const FVector FirstPosition = FirstBlock->GetActorLocation();
+            const FVector ColumnSpan = LastBlock->GetActorLocation() - FirstPosition;
+            Mode->AddOrbitalFeedback(EOrbitalFeedbackKind::LineClear, FirstPosition,
+                ColumnSpan.IsNearlyZero() ? GetActorForwardVector() : ColumnSpan.GetSafeNormal(),
+                FLinearColor(0.97f, 0.54f, 0.30f), static_cast<float>(ColumnSpan.Length()));
         }
     }
     for (ABlock* Block : ColumnBlocks)

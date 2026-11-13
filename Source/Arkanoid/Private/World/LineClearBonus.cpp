@@ -5,6 +5,7 @@
 ALineClearBonus::ALineClearBonus()
 {
     Color = FLinearColor(0.97f, 0.54f, 0.30f);
+    DisplayName = NSLOCTEXT("ArkanoidBonus", "LineClear", "Line clear");
     Symbol = TEXT("|");
 }
 

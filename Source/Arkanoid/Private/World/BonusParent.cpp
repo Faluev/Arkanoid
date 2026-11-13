@@ -86,9 +86,9 @@ void ABonusParent::NotifyActorBeginOverlap(AActor* OtherActor)
     {
         bCollected = true;
         ApplyTo(*Paddle);
-        if (const AArkanoidArcadeMode* Mode = GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
+        if (AArkanoidArcadeMode* Mode = GetWorld()->GetAuthGameMode<AArkanoidArcadeMode>())
         {
-            Mode->OnBonusCollected(GetActorLocation());
+            Mode->OnBonusCollected(GetActorLocation(), DisplayName, Color);
         }
         UE_LOG(LogTemp, Log, TEXT("Arkanoid Bonus %s collected"), *GetClass()->GetName());
         Destroy();
